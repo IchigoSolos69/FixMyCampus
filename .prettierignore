@@ -1,0 +1,9 @@
+node_modules/
+**/dist/
+coverage/
+.runtime/
+uploads/
+backups/
+test-results/
+playwright-report/
+package-lock.json
