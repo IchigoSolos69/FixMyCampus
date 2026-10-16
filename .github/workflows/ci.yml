@@ -47,6 +47,13 @@ jobs:
       - run: npm run typecheck
       - run: npm run build
       - run: npm run test:coverage
+      - name: Enable schema triggers in the disposable MySQL service
+        env:
+          MYSQL_CONTAINER_ID: ${{ job.services.mysql.id }}
+          MYSQL_PWD: ci-local-root-only
+        run: |
+          docker exec --env MYSQL_PWD "$MYSQL_CONTAINER_ID" mysql --user=root \
+            --execute='SET GLOBAL log_bin_trust_function_creators = 1;'
       - run: npm run test:integration
       - run: npx playwright install --with-deps chromium
       - name: Browser scenarios

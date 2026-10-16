@@ -2,6 +2,8 @@ name: fixmycampus
 services:
   mysql:
     image: mysql:8.4
+    # Local evaluation only; the application account keeps schema-scoped privileges.
+    command: ['--log-bin-trust-function-creators=1']
     restart: unless-stopped
     environment:
       MYSQL_DATABASE: fixmycampus

@@ -10,6 +10,14 @@ Run `npm ci`, `npm run build`, and `npm run db:migrate` during deployment. Creat
 
 Start `npm start` in a process supervisor. Configure the reverse proxy using `deploy/nginx.conf`, replacing the hostname and certificate paths. Only the HTTPS proxy should be externally reachable; MySQL and application HTTP remain private. Configure one trusted proxy hop, retain request-size limits, and validate secure-cookie behavior through the actual proxy.
 
+### MySQL trigger permissions
+
+The migrations create audit/history protection triggers. With MySQL binary logging enabled, schema-level `TRIGGER` permission alone can produce `ER_BINLOG_CREATE_ROUTINE_NEED_SUPER`. CI configures `log_bin_trust_function_creators=1` using root inside its disposable MySQL service before running the tests. The local Compose service starts with the same setting; the application account receives no global administrative privileges.
+
+For production, have the DBA approve that server setting or run migrations with a separately privileged deployment account by supplying its `DATABASE_URL` only to `npm run db:migrate`. Start the application with the restricted runtime account afterward. When deploying the supplied container with separate migrations, override its automatic-migration startup command with `node dist/apps/api/src/server.js`.
+
+MySQL DDL is not rolled back when a migration fails. If initialization already failed, inspect the migration record and existing schema before retrying; do not delete tables or mark a migration complete to suppress the error. A new CI run gets a fresh disposable service. For an existing database, back it up and have the deployment operator finish the missing statements before recording completion, or provision a separate empty evaluation database while preserving the failed one.
+
 For Cloudinary, set `STORAGE_DRIVER=cloudinary` and all three `CLOUDINARY_*` secrets. Files use authenticated/private storage and still pass through application authorization. Validate uploads and downloads using a restricted officer and an unrelated account before rollout. Local storage uses `UPLOADS_DIR`; never configure a publicly served directory.
 
 SMTP submission should use TLS: set `SMTP_SECURE=true` for implicit TLS (commonly port 465), or a relay supporting STARTTLS on its documented port. Set `SMTP_USER`, `SMTP_PASSWORD`, and a verified `SMTP_FROM`. Confirm account verification/reset links use the HTTPS `APP_URL`. Monitor unsent outbox entries and failures; a relay outage must not roll back a successful complaint submission.
