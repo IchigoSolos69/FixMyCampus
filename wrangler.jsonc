@@ -1,0 +1,12 @@
+{
+  "name": "fixmycampus",
+  "pages_build_output_dir": "./apps/web/dist",
+  "compatibility_date": "2026-10-16",
+  "env": {
+    "production": {
+      "vars": {
+        "API_ORIGIN": "https://fixmycampus-api-7e74.onrender.com",
+      },
+    },
+  },
+}

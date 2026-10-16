@@ -54,3 +54,15 @@ Reproduce using the guarded commands in `operations.md`. Record host hardware, c
 - Production TLS/certificates, real institutional SMTP, private Cloudinary credentials, and off-host backup storage were not configured. Local SMTP capture and local private files were exercised.
 - A timed 10 MB submission, first-time-user 90-second usability study, full WCAG 2.1 AA audit, and sustained academic-term uptime have not been certified.
 - Retention protections and backup policy are implemented/documented; 90-day notification history, 12-month audit retention, daily backup operation, RPO 24 hours, and RTO four hours require continued operational monitoring and a measured restore exercise.
+
+## Cloudflare Pages deployment preparation — 16 October 2026
+
+After adding the Pages API proxy, managed MySQL TLS, and private ImageKit storage, the full unit suite passes **232 tests**. The real local MySQL integration suite passes **11 tests**, including migration `004_imagekit_storage.sql`. The production build passes, and Cloudflare Wrangler **4.151.1** compiles the Pages Function successfully.
+
+The new Aiven Free service was checked through verified TLS: MySQL **8.4.11**, binary logging enabled, and trusted trigger creators enabled. All four migrations and the initial administrator/catalog bootstrap succeeded. Its application account requires SSL and has only SELECT, INSERT, UPDATE, and DELETE privileges on the application database. No demo accounts or complaint data were seeded into this service.
+
+Live ImageKit round trips passed for PNG (1,052 bytes), JPEG (2,721 bytes), and a valid PDF (10,484,730 bytes, 1,030 bytes below 10 MiB). Each file reported private metadata, returned byte-identical contents through the storage helper, and denied unsigned access with HTTP 403. Every synthetic fixture was deleted and confirmed absent. The check found that default ImageKit optimization altered JPEG evidence bytes; signed reads now explicitly request original delivery, covered by a regression assertion.
+
+A two-second provider-signed URL returned HTTP 200 before expiry, remained accessible at approximately three seconds, and returned HTTP 403 at approximately thirteen seconds. This measures provider timing tolerance rather than strict second-level expiration. The application fetches its 60-second URLs server-side after authorization and never returns them to browsers.
+
+These checks do not yet certify the complete public deployment or delivered production email. The free API host can sleep; background jobs and emergency notifications cannot satisfy continuous-service targets while it is asleep. See [the free hosting guide](../deploy/pages-free.md).

@@ -120,3 +120,7 @@ For the Docker SPA use `E2E_BASE_URL=http://localhost:3001`. Browser tests cover
 Read [the demo walkthrough](docs/demo.md), [API contract](docs/api.md), [architecture and six diagrams](docs/architecture.md), [SRS amendments](docs/decisions.md), [measured verification results](docs/verification.md), and [deployment/backup guide](docs/operations.md).
 
 This release excludes multi-campus tenancy, native mobile apps, SMS, WebSockets/SSE, and multilingual UI. Production capacity, uptime, first-time-user timing, SMTP/Cloudinary credentials, and restore-time targets require measurement in the intended deployment.
+
+For `fixmycampus.pages.dev`, use the [free Pages/API hosting guide](deploy/pages-free.md). It uses Cloudflare Pages, Render Free, Aiven MySQL, and private ImageKit storage. The API sleeps when idle, so this option has cold starts and pauses background jobs while asleep.
+
+For an always-on server and your own domain, use the [Cloudflare Tunnel deployment](deploy/cloudflare.md). Its separate production Compose file keeps MySQL and uploads on the server and publishes the app through one HTTPS hostname.

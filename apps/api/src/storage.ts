@@ -6,6 +6,8 @@ import multer from 'multer';
 import { config } from './config.js';
 import { HttpError } from './errors.js';
 import { MAX_FILES, MAX_FILE_SIZE } from '@fixmycampus/shared';
+import { saveImageKitFile, readImageKitFile, removeImageKitFile } from './imagekit-storage.js';
+export type StorageDriver = 'local' | 'cloudinary' | 'imagekit';
 cloudinary.config(config.cloudinary);
 export const upload = multer({
   storage: multer.memoryStorage(),
@@ -33,10 +35,12 @@ export function validateFile(file: Express.Multer.File) {
 export async function saveFile(
   buffer: Buffer,
   mime: string,
-): Promise<{ key: string; driver: 'local' | 'cloudinary' }> {
+): Promise<{ key: string; driver: StorageDriver }> {
   if (!detectMime(buffer) || detectMime(buffer) !== mime)
     throw new HttpError(422, 'Invalid file contents.');
   const id = randomUUID();
+  if (config.storage === 'imagekit')
+    return { key: await saveImageKitFile(buffer, mime, id), driver: 'imagekit' };
   if (config.storage === 'cloudinary') {
     if (
       !config.cloudinary.cloud_name ||
@@ -58,6 +62,7 @@ export async function saveFile(
   return { key: id, driver: 'local' };
 }
 export async function readFile(key: string, driver: string): Promise<Buffer> {
+  if (driver === 'imagekit') return readImageKitFile(key);
   if (driver === 'cloudinary') {
     const url = cloudinary.utils.private_download_url(key, '', {
       resource_type: 'raw',
@@ -76,7 +81,8 @@ export async function readFile(key: string, driver: string): Promise<Buffer> {
   }
 }
 export async function removeFile(key: string, driver: string) {
-  if (driver === 'cloudinary')
+  if (driver === 'imagekit') await removeImageKitFile(key);
+  else if (driver === 'cloudinary')
     await cloudinary.uploader.destroy(key, { resource_type: 'raw', type: 'authenticated' });
   else if (/^[a-f0-9-]{36}$/.test(key))
     await unlink(path.join(config.uploadsDir, key)).catch(() => {});

@@ -20,7 +20,7 @@ import {
   istDateBoundary,
 } from './workflow.js';
 import { notifyComplaint, deliverOutbox } from './notifications.js';
-import { validateFile, saveFile, removeFile } from './storage.js';
+import { validateFile, saveFile, removeFile, type StorageDriver } from './storage.js';
 
 export const complaintSelect = `SELECT c.*,cat.name category_name,d.name department_name,u.name reporter_name,u.email reporter_email,r.due_at,r.escalated_at,f.rating FROM complaints c JOIN categories cat ON cat.id=c.category_id JOIN users u ON u.id=c.reporter_id LEFT JOIN departments d ON d.id=c.department_id JOIN resolution_cycles r ON r.complaint_id=c.id AND r.cycle_number=c.cycle_number LEFT JOIN feedback f ON f.complaint_id=c.id`;
 export function complaintVisibility(user: User) {
@@ -194,7 +194,7 @@ export async function getComplaint(user: User, id: number, db?: DB): Promise<Com
 }
 type SavedFile = {
   key: string;
-  driver: 'local' | 'cloudinary';
+  driver: StorageDriver;
   file: Express.Multer.File;
   mime: string;
 };

@@ -1,0 +1,66 @@
+name: fixmycampus-cloudflare
+
+services:
+  mysql:
+    image: mysql:8.4
+    command: ['--log-bin-trust-function-creators=1']
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: fixmycampus
+      MYSQL_USER: campus
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:?Set a generated hexadecimal database password}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?Set a separate MySQL administrator password}
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test:
+        [
+          'CMD-SHELL',
+          'MYSQL_PWD="$$MYSQL_ROOT_PASSWORD" mysqladmin ping --protocol=TCP -h 127.0.0.1 -uroot --silent',
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+
+  app:
+    image: fixmycampus:cloudflare
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    # Run migrations and the initial administrator bootstrap explicitly before starting.
+    command: ['node', 'dist/apps/api/src/server.js']
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: 3001
+      APP_URL: ${APP_URL:?Set the public HTTPS origin}
+      DATABASE_URL: mysql://campus:${MYSQL_PASSWORD:?Set MYSQL_PASSWORD}@mysql:3306/fixmycampus
+      JWT_SECRET: ${JWT_SECRET:?Set a random signing secret}
+      APPROVED_EMAIL_DOMAINS: ${APPROVED_EMAIL_DOMAINS:?Set approved institutional email domains}
+      SMTP_HOST: ${SMTP_HOST:?Set the production SMTP host}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_SECURE: ${SMTP_SECURE:-false}
+      SMTP_USER: ${SMTP_USER:?Set the SMTP account}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:?Set the SMTP password}
+      SMTP_FROM: ${SMTP_FROM:?Set a verified sender}
+      UPLOADS_DIR: /app/uploads
+      STORAGE_DRIVER: local
+    volumes:
+      - uploads:/app/uploads
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+  tunnel:
+    image: cloudflare/cloudflared:2026.10.1
+    command: ['tunnel', '--no-autoupdate', 'run']
+    restart: unless-stopped
+    environment:
+      TUNNEL_TOKEN: ${TUNNEL_TOKEN:?Create a named Cloudflare Tunnel and set its connector token}
+    depends_on:
+      app:
+        condition: service_healthy
+
+volumes:
+  mysql_data:
+  uploads:

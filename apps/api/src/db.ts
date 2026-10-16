@@ -6,6 +6,9 @@ import mysql, {
 import { config } from './config.js';
 export const pool = mysql.createPool({
   uri: config.databaseUrl,
+  ssl: config.databaseSslCa
+    ? { ca: config.databaseSslCa, rejectUnauthorized: true, verifyIdentity: true }
+    : undefined,
   timezone: 'Z',
   dateStrings: true,
   connectionLimit: 12,

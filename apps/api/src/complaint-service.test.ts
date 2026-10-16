@@ -385,6 +385,12 @@ describe('atomic complaint submission', () => {
     await expect(createComplaint(owner, input, [file()])).rejects.toMatchObject({ status: 422 });
     expect(mocks.remove).toHaveBeenCalledWith('saved-image', 'local');
   });
+  it('cleans private ImageKit uploads when the complaint transaction fails', async () => {
+    mocks.save.mockResolvedValueOnce({ key: 'private-imagekit-key', driver: 'imagekit' });
+    mocks.rows.mockResolvedValueOnce([]);
+    await expect(createComplaint(owner, input, [file()])).rejects.toMatchObject({ status: 422 });
+    expect(mocks.remove).toHaveBeenCalledWith('private-imagekit-key', 'imagekit');
+  });
   it('cleans earlier files if a later storage write fails', async () => {
     mocks.save
       .mockResolvedValueOnce({ key: 'first', driver: 'local' })

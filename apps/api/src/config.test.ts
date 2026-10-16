@@ -56,4 +56,23 @@ describe('deployment configuration', () => {
     vi.stubEnv('APPROVED_EMAIL_DOMAINS', ' CAMPUS.TEST,Staff.Campus.Test ');
     expect((await loadConfig()).domains).toEqual(['campus.test', 'staff.campus.test']);
   });
+  it('accepts the ImageKit driver and normalizes its canonical endpoint', async () => {
+    vi.stubEnv('STORAGE_DRIVER', 'imagekit');
+    vi.stubEnv('IMAGEKIT_URL_ENDPOINT', 'https://ik.imagekit.io/campus_id/');
+    expect(await loadConfig()).toMatchObject({
+      storage: 'imagekit',
+      imagekit: { urlEndpoint: 'https://ik.imagekit.io/campus_id' },
+    });
+  });
+  it.each([
+    'http://ik.imagekit.io/campus',
+    'https://localhost/campus',
+    'https://ik.imagekit.io.evil.test/campus',
+    'https://user:password@ik.imagekit.io/campus',
+    'https://ik.imagekit.io/campus?redirect=localhost',
+    'https://ik.imagekit.io/campus/../other',
+  ])('rejects an unsafe ImageKit endpoint', async (endpoint) => {
+    vi.stubEnv('IMAGEKIT_URL_ENDPOINT', endpoint);
+    await expect(loadConfig()).rejects.toThrow('IMAGEKIT_URL_ENDPOINT');
+  });
 });
