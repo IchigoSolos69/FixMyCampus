@@ -3,6 +3,8 @@ import path from 'node:path';
 dotenv.config({ path: path.resolve(process.cwd(), '.env'), quiet: true });
 dotenv.config({ path: path.resolve(process.cwd(), '../../.env'), quiet: true });
 const prod = process.env.NODE_ENV === 'production';
+if (prod && !process.env.DATABASE_URL?.trim())
+  throw new Error('Set DATABASE_URL to the production MySQL connection URL.');
 const appUrl = new URL(process.env.APP_URL || 'http://localhost:5173');
 if (
   !['http:', 'https:'].includes(appUrl.protocol) ||

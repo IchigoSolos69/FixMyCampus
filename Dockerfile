@@ -18,7 +18,7 @@ COPY --from=build /app/packages/shared ./packages/shared
 RUN mkdir -p /app/uploads && chown -R node:node /app
 USER node
 WORKDIR /app/apps/api
-ENV PORT=3001 UPLOADS_DIR=/app/uploads
+ENV NODE_ENV=production PORT=3001 UPLOADS_DIR=/app/uploads
 EXPOSE 3001
 HEALTHCHECK --interval=30s --timeout=5s --start-period=30s CMD node -e "fetch('http://127.0.0.1:3001/api/v1/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"
 CMD ["sh", "-c", "node dist/apps/api/src/migrate.js && node dist/apps/api/src/server.js"]

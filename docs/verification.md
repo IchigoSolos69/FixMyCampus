@@ -57,7 +57,7 @@ Reproduce using the guarded commands in `operations.md`. Record host hardware, c
 
 ## Cloudflare Pages deployment preparation — 16 October 2026
 
-After adding the Pages API proxy, managed MySQL TLS, and private ImageKit storage, the full unit suite passes **232 tests**. The real local MySQL integration suite passes **11 tests**, including migration `004_imagekit_storage.sql`. The production build passes, and Cloudflare Wrangler **4.151.1** compiles the Pages Function successfully.
+After adding the Pages API proxy, managed MySQL TLS, private ImageKit storage, and the production configuration guard, the full unit suite passes **235 tests**. The real local MySQL integration suite passes **11 tests**, including migration `004_imagekit_storage.sql`. The production build passes, and Cloudflare Wrangler **4.151.1** compiles the Pages Function successfully. The Docker runtime defaults to production; a missing database URL fails immediately instead of connecting to the development database.
 
 The new Aiven Free service was checked through verified TLS: MySQL **8.4.11**, binary logging enabled, and trusted trigger creators enabled. All four migrations and the initial administrator/catalog bootstrap succeeded. Its application account requires SSL and has only SELECT, INSERT, UPDATE, and DELETE privileges on the application database. No demo accounts or complaint data were seeded into this service.
 

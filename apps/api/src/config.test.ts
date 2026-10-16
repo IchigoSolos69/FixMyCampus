@@ -1,15 +1,18 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
+vi.mock('dotenv', () => ({ default: { config: vi.fn() } }));
 const developmentSecret = 'local-development-only-change-this-secret-before-deployment-2026';
 async function loadConfig({
   mode = 'production',
   url = 'https://campus.example.edu',
   secret = 'x'.repeat(64),
-}: { mode?: string; url?: string; secret?: string } = {}) {
+  databaseUrl = 'mysql://campus:password@db.example.test:3306/fixmycampus',
+}: { mode?: string; url?: string; secret?: string; databaseUrl?: string } = {}) {
   vi.resetModules();
   vi.stubEnv('NODE_ENV', mode);
   vi.stubEnv('APP_URL', url);
   vi.stubEnv('JWT_SECRET', secret);
+  vi.stubEnv('DATABASE_URL', databaseUrl);
   return (await import('./config.js')).config;
 }
 afterEach(() => {
@@ -17,6 +20,15 @@ afterEach(() => {
   vi.resetModules();
 });
 describe('deployment configuration', () => {
+  it.each([undefined, '', '   '])(
+    'requires an explicit nonempty production database URL',
+    async (value) => {
+      await loadConfig();
+      vi.stubEnv('DATABASE_URL', value);
+      vi.resetModules();
+      await expect(import('./config.js')).rejects.toThrow('DATABASE_URL');
+    },
+  );
   it.each([
     '',
     'too-short',
@@ -31,8 +43,13 @@ describe('deployment configuration', () => {
         mode: 'development',
         url: 'http://localhost:5173/',
         secret: developmentSecret,
+        databaseUrl: '',
       }),
-    ).toMatchObject({ production: false, appUrl: 'http://localhost:5173' });
+    ).toMatchObject({
+      production: false,
+      appUrl: 'http://localhost:5173',
+      databaseUrl: 'mysql://campus:campus@127.0.0.1:3306/fixmycampus',
+    });
   });
   it('normalizes a trailing slash so browser Origin checks still match', async () => {
     expect((await loadConfig({ url: 'https://campus.example.edu/' })).appUrl).toBe(
