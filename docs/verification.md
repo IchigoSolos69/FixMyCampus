@@ -1,17 +1,17 @@
 # Verification record
 
-Measured locally on **16 October 2026 (IST)**. This records executed checks and their limits; the requirement matrix in `requirements.md` distinguishes automated evidence from deployment acceptance work.
+Measured locally and against the public deployment on **16 October 2026 (IST)**. This records executed checks and their limits; the requirement matrix in `requirements.md` distinguishes automated evidence from deployment acceptance work.
 
 ## Functional checks
 
 | Check                       | Observed result                                                                                                                                                 |
 | --------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Unit/client suite           | **184/184 passed** across 11 files                                                                                                                              |
+| Unit/client suite           | **235/235 passed** in the latest full run, including Pages proxy and private ImageKit coverage                                                                  |
 | Service coverage            | **92.73% lines/statements**, **93.46% branches**, **97.82% functions**; all configured 70% gates passed                                                         |
 | Workspace checks            | TypeScript typecheck, production build, and Prettier format check passed                                                                                        |
 | Compiled application        | Without Vite/tsx, smoke test returned SPA 200, JavaScript asset 200, and Administrator login 200                                                                |
 | Production dependency audit | **0 vulnerabilities** after updating Nodemailer to 10.1.1                                                                                                       |
-| Real MySQL integration      | **11/11 passed**, final run 6.18 seconds, dedicated disposable `fixmycampus_test` database                                                                      |
+| Real MySQL integration      | **11/11 passed** against real local MySQL, including the ImageKit storage migration                                                                             |
 | Chrome browser scenarios    | **6/6 passed**, final run 23.6 seconds, real API, Vite, MySQL, and Mailpit                                                                                      |
 | PDF export                  | Actual department report downloaded, text extracted with pypdf, rendered using Poppler, and visually inspected: legible one-page report, no clipping or overlap |
 | Script syntax               | Both Node benchmark scripts parsed successfully; Bash `-n` accepted backup and isolated-restore helpers                                                         |
@@ -29,7 +29,7 @@ The six browser scenarios exercised:
 5. Administrator department/category creation and actual CSV/PDF downloads.
 6. Registration, receipt of captured verification email, verification, and successful login using the updated SMTP library.
 
-These browser tests used installed Chrome through `PLAYWRIGHT_CHANNEL=chrome`. They were run against the development SPA at port 5173 and API at port 3001. Mailpit captured messages locally; no external email recipients were contacted. Additional frontend review checked desktop/mobile screens, visible labels, status text, focus/contrast, and role-specific navigation. This does not replace a complete assistive-technology accessibility audit.
+These browser tests used installed Chrome through `PLAYWRIGHT_CHANNEL=chrome`. They were run against the development SPA at port 5173 and API at port 3001. Mailpit captured messages locally; those local runs contacted no external email recipients. Additional frontend review checked desktop/mobile screens, visible labels, status text, focus/contrast, and role-specific navigation. This does not replace a complete assistive-technology accessibility audit.
 
 ## Read-path capacity measurement
 
@@ -48,14 +48,17 @@ The first unoptimized large-data run failed: p95 approximately **10,107 ms** and
 
 Reproduce using the guarded commands in `operations.md`. Record host hardware, concurrent workloads, warm-up procedure, and raw outputs when repeating these measurements. Measure filtered keyword searches, mixed-role traffic, uploads, SMTP outages, and production network latency separately.
 
-## Deployment work not certified by local tests
+## Deployment limits and remaining acceptance work
 
-- Docker image/Compose launch and the backup/restore execution were not run because Docker was unavailable on the authoring host. The scripts received syntax review; a real isolated restore rehearsal remains required.
-- Production TLS/certificates, real institutional SMTP, private Cloudinary credentials, and off-host backup storage were not configured. Local SMTP capture and local private files were exercised.
+- Local Docker/Compose launch and backup/restore execution were not run because Docker was unavailable on the authoring host. Render successfully built and launched the API's Docker image. The backup scripts received syntax review; a real isolated restore rehearsal remains required.
+- Public HTTPS, verified MySQL TLS, private ImageKit storage, and Brevo SMTP are configured and checked below. Off-host backup storage is not configured; the optional Cloudinary provider was not exercised in production.
+- Production capacity, cold-start delays, sustained uptime, and recovery times have not been measured. The 500-worker results above describe the local read path and do not establish capacity on the free hosting services.
 - A timed 10 MB submission, first-time-user 90-second usability study, full WCAG 2.1 AA audit, and sustained academic-term uptime have not been certified.
 - Retention protections and backup policy are implemented/documented; 90-day notification history, 12-month audit retention, daily backup operation, RPO 24 hours, and RTO four hours require continued operational monitoring and a measured restore exercise.
 
-## Cloudflare Pages deployment preparation — 16 October 2026
+## Public deployment verified — 16 October 2026
+
+The public application at [fixmycampus.pages.dev](https://fixmycampus.pages.dev) and the Render API at [fixmycampus-api-7e74.onrender.com](https://fixmycampus-api-7e74.onrender.com) each returned HTTP 200 from `/api/v1/health`, reported a connected database, and sent `Cache-Control: no-store`. The deployed API revision was `5f07bae`.
 
 After adding the Pages API proxy, managed MySQL TLS, private ImageKit storage, and the production configuration guard, the full unit suite passes **235 tests**. The real local MySQL integration suite passes **11 tests**, including migration `004_imagekit_storage.sql`. The production build passes, and Cloudflare Wrangler **4.151.1** compiles the Pages Function successfully. The Docker runtime defaults to production; a missing database URL fails immediately instead of connecting to the development database.
 
@@ -65,4 +68,12 @@ Live ImageKit round trips passed for PNG (1,052 bytes), JPEG (2,721 bytes), and 
 
 A two-second provider-signed URL returned HTTP 200 before expiry, remained accessible at approximately three seconds, and returned HTTP 403 at approximately thirteen seconds. This measures provider timing tolerance rather than strict second-level expiration. The application fetches its 60-second URLs server-side after authorization and never returns them to browsers.
 
-These checks do not yet certify the complete public deployment or delivered production email. The free API host can sleep; background jobs and emergency notifications cannot satisfy continuous-service targets while it is asleep. See [the free hosting guide](../deploy/pages-free.md).
+The production API smoke check signed in as the existing Administrator through the Pages proxy. Both refresh and CSRF cookies were separate, host-only cookies with `Secure`, `HttpOnly`, `SameSite=Strict`, and the `/api/v1/auth` path. The catalog returned **15 categories and 11 departments**. The Administrator dashboard returned 11 department aggregates and no recent complaint details. Category, department, status, and SLA reports returned HTTP 200. CSV and PDF exports returned HTTP 200 with the expected content types and no-store headers; the PDF had a valid `%PDF-` signature. Reports were empty because no production complaints had been created.
+
+Live browser checks restored the Administrator session after a page reload. People and access listed one active Administrator. Category settings displayed all 15 expected department routes with the appropriate Critical and Confidential badges. The reports screen loaded with enabled CSV/PDF export controls and the correct zero-complaint empty state.
+
+Negative production checks returned HTTP **403** for refresh from an untrusted origin, **401** for an unauthenticated complaint queue request, and **422** for registration outside the approved institutional domain. A read-only database query confirmed that the rejected registration created no user.
+
+With explicit approval, exactly **one** password-reset request was submitted for the existing Administrator. Verified TLS database queries found exactly one new reset outbox row, marked sent after **one attempt**, with no stored error: Brevo SMTP accepted the message. Brevo's transactional email logs subsequently showed both **Sent** and **Delivered** events for that same message on 16 October 2026. The recipient's mailbox view or reading of the message was not independently verified. No reset link was opened during these checks, and the password and account token version remained unchanged. User, complaint, and attachment counts remained **1, 0, and 0**; no demo users or complaints were created by these checks.
+
+These checks establish public connectivity and the tested production paths; they do not certify sustained availability or all workflows under production load. The free API host can sleep; background jobs and emergency notifications cannot satisfy continuous-service targets while it is asleep. See [the free hosting guide](../deploy/pages-free.md).
