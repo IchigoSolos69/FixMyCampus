@@ -4,20 +4,35 @@ import type { AuthResponse } from '@fixmycampus/shared';
 import { loginSchema, registerSchema, passwordSchema } from '@fixmycampus/shared';
 import { useAuth } from '../auth';
 import { post } from '../api';
-import { Field, FormError, Icon, Loading, Success } from '../components';
+import { Field, FormError, Icon, Success } from '../components';
+
+export function signInDestination(state: unknown) {
+  const target = (state as { from?: unknown } | null)?.from;
+  return typeof target === 'string' && /^\/(?![\/\\])/.test(target) ? target : '/';
+}
 
 export function AuthPage({ mode }: { mode: 'login' | 'register' | 'forgot' | 'reset' | 'verify' }) {
   const { user, loading, accept } = useAuth();
   const [search] = useSearchParams();
   const navigate = useNavigate();
   const location = useLocation();
+  const destination = signInDestination(location.state);
   const [busy, setBusy] = useState(false);
+  const [slow, setSlow] = useState(false);
   const [error, setError] = useState<unknown>(null);
   const [success, setSuccess] = useState('');
   useEffect(() => {
     setError(null);
     setSuccess('');
   }, [mode]);
+  useEffect(() => {
+    if (!busy) {
+      setSlow(false);
+      return;
+    }
+    const timer = setTimeout(() => setSlow(true), 8000);
+    return () => clearTimeout(timer);
+  }, [busy]);
   const token = search.get('token') || '';
   const titles = {
     login: 'Welcome back.',
@@ -28,6 +43,7 @@ export function AuthPage({ mode }: { mode: 'login' | 'register' | 'forgot' | 're
   };
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (loading || busy) return;
     setBusy(true);
     setError(null);
     setSuccess('');
@@ -37,8 +53,7 @@ export function AuthPage({ mode }: { mode: 'login' | 'register' | 'forgot' | 're
         const data = loginSchema.safeParse(values);
         if (!data.success) throw new Error(data.error.issues[0].message);
         accept(await post<AuthResponse>('/auth/login', data.data));
-        const target = (location.state as { from?: string } | null)?.from;
-        navigate(target && target.startsWith('/') ? target : '/', { replace: true });
+        navigate(destination, { replace: true });
       } else if (mode === 'register') {
         const data = registerSchema.safeParse(values);
         if (!data.success) throw new Error(data.error.issues[0].message);
@@ -66,13 +81,7 @@ export function AuthPage({ mode }: { mode: 'login' | 'register' | 'forgot' | 're
       setBusy(false);
     }
   }
-  if (loading)
-    return (
-      <div className="boot-screen">
-        <Loading />
-      </div>
-    );
-  if (user && mode === 'login') return <Navigate to="/" replace />;
+  if (user && mode === 'login') return <Navigate to={destination} replace />;
   return (
     <div className="auth-layout">
       <aside className="auth-story">
@@ -130,6 +139,22 @@ export function AuthPage({ mode }: { mode: 'login' | 'register' | 'forgot' | 're
                     ? 'Use a strong password to keep your account safe.'
                     : 'Confirm your institutional email address to activate your account.'}
           </p>
+          {loading && (
+            <div className="notice confidential" role="status">
+              <Icon name="clock" />
+              <span>
+                Checking your existing sign-in… You can fill in the form while we connect.
+              </span>
+            </div>
+          )}
+          {slow && (
+            <div className="notice confidential" role="status">
+              <Icon name="clock" />
+              <span>
+                Connecting is taking longer than usual. Your request is still in progress.
+              </span>
+            </div>
+          )}
           <FormError error={error} />
           {success && <Success>{success}</Success>}
           {(!success || mode === 'forgot') && (
@@ -199,7 +224,11 @@ export function AuthPage({ mode }: { mode: 'login' | 'register' | 'forgot' | 're
                   Forgot password?
                 </Link>
               )}
-              <button className="button primary auth-submit" type="submit" disabled={busy}>
+              <button
+                className="button primary auth-submit"
+                type="submit"
+                disabled={busy || loading}
+              >
                 {busy
                   ? 'Please wait…'
                   : {

@@ -2,7 +2,7 @@
 
 This option uses Cloudflare Pages for React and an API proxy, Render Free for Express, Aiven Free for MySQL 8.4, ImageKit Free for private attachments, and Brevo Free for email. It needs no always-on personal server. Each provider account and its terms must be accepted by the account owner. Select only the named **Free** plans; stop if signup or verification requires a payment, paid upgrade, or billing authorization.
 
-The application remains functional with free-tier limits. Render sleeps after 15 minutes without incoming traffic and takes about a minute to wake. **SLA scans and queued email delivery pause while the API sleeps** and resume after wake-up. Aiven can power off inactive free databases. This setup does not promise production uptime, continuous emergency processing, or the SRS's 500-user capacity. Do not add artificial keep-alive traffic to bypass provider limits.
+The application remains functional with free-tier limits. Render sleeps after 15 minutes without incoming traffic and takes about a minute to wake. **SLA scans and queued email delivery pause while the API sleeps** and resume after wake-up. Aiven can power off inactive free databases. The optional [scheduled health checks](wake-worker/README.md) request the API and database every five minutes to reduce idle cold starts. They do not prevent crashes, provider suspension, exhausted quotas, or maintenance. This setup does not promise production uptime, continuous emergency processing, or the SRS's 500-user capacity.
 
 ## 1. Create the free accounts and persistent services
 

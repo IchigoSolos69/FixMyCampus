@@ -5,24 +5,15 @@ import type { AppNotification } from '@fixmycampus/shared';
 import { REPORTER_ROLES } from '@fixmycampus/shared';
 import { useAuth } from './auth';
 import { request, pollOptions } from './api';
-import { Icon, Loading } from './components';
+import { Icon } from './components';
 import { AuthPage } from './pages/AuthPage';
 import { DashboardPage, NotificationsPage, ReportsPage, ProfilePage } from './pages/WorkspacePages';
 import { ComplaintDetailPage, ComplaintsPage, NewComplaintPage } from './pages/ComplaintPages';
 import { AdminPage } from './pages/AdminPage';
 
 function Protected() {
-  const { user, loading } = useAuth();
+  const { user } = useAuth();
   const location = useLocation();
-  if (loading)
-    return (
-      <div className="boot-screen">
-        <div className="brand-mark">
-          <Icon name="campus" size={32} />
-        </div>
-        <Loading label="Opening your campus service desk…" />
-      </div>
-    );
   if (!user) return <Navigate to="/login" replace state={{ from: location.pathname }} />;
   return <Shell />;
 }

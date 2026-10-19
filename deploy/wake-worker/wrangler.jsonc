@@ -1,0 +1,13 @@
+{
+  "name": "fixmycampus-wakeup",
+  "main": "index.mjs",
+  "compatibility_date": "2026-10-19",
+  "workers_dev": false,
+  "preview_urls": false,
+  "triggers": {
+    "crons": ["*/5 * * * *"],
+  },
+  "observability": {
+    "enabled": true,
+  },
+}
