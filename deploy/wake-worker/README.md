@@ -12,6 +12,14 @@ Both API responses must be HTTP 200 JSON with `status: "ok"` and `database: "con
 
 Each request has a 90-second deadline to allow an initial Render cold start. Redirects are rejected and requests bypass caching. One compact `service_health` log records status, elapsed milliseconds, and a safe failure code for each target. A failed check throws so Cloudflare records a failed cron invocation. No response bodies, tokens, passwords, or user information are logged. There is no public HTTP trigger or arbitrary proxy endpoint; `workers.dev` and preview URLs are disabled.
 
+## Recovering a powered-off database
+
+On 19 October 2026, the Aiven Free database was found **Powered off** and its hostname returned NXDOMAIN. Render could not resolve the database host, so API calls failed even after the Render instance woke. Recovery required **Power on service** in the Aiven Console; after restoration, API health returned HTTP 200 with a connected database.
+
+Aiven documents that it may power off free services without continuing activity, but does not specify the inactivity threshold or guarantee that `SELECT 1` qualifies. These scheduled database checks provide activity on a best-effort basis. An HTTP request cannot restart an Aiven database that is already powered off, and this Worker intentionally has no Aiven administrative credentials.
+
+If the database check fails with a hostname error, inspect the existing service's status in Aiven. If it is **Powered off**, open **Services → fixmycampus → Actions → Power on service**, wait until it is **Running**, then check both API health URLs again. Preserve the existing service and data; do not delete it or create a replacement database to resolve the outage. Aiven restoration may take minutes or longer. See [Aiven's free-tier activity policy](https://aiven.io/docs/products/mysql/concepts/mysql-free-tier) and [MySQL power-on and restoration procedure](https://aiven.io/docs/products/mysql/howto/power-cycle-service).
+
 ## Check and deploy
 
 From the repository root, using Node.js 24:
@@ -28,7 +36,7 @@ npm exec --yes --package=wrangler@4.151.1 -- wrangler login
 npm exec --yes --package=wrangler@4.151.1 -- wrangler deploy --config deploy/wake-worker/wrangler.jsonc
 ```
 
-The Worker is named `fixmycampus-wakeup`. Its separate configuration must be used: the repository-root `wrangler.jsonc` configures **Pages**, not this Worker. The Worker has no paid bindings, storage, secret environment variables, or other provisioned resources. Keep the account on Workers Free. Do not enable a paid plan to complete this setup.
+The Worker is named `fixmycampus-wakeup`. Its separate configuration must be used: the repository-root `wrangler.jsonc` configures **Pages**, not this Worker. The configuration pins the intended Cloudflare account ID, so noninteractive deployments do not need to enumerate account memberships. An authorized deployment token can be limited to that account's **Workers Scripts: Edit** and **Account Settings: Read** permissions. Keep such a token in the provider's secret input; never add it to this configuration or source code. The Worker runtime has no paid bindings, storage, secret environment variables, or other provisioned resources. Keep the account on Workers Free. Do not enable a paid plan to complete this setup.
 
 Alternatively, use Cloudflare's Worker editor to deploy `index.mjs` as an ES module named `fixmycampus-wakeup`, disable public `workers.dev` and preview URLs, enable Workers Logs, and add one Cron Trigger for every five minutes. The schedule is managed in `wrangler.jsonc` for subsequent CLI deployments. Cron changes can take up to 15 minutes to propagate. Review **Workers & Pages → fixmycampus-wakeup → Observability** for actual scheduled invocations and all three successful checks; a dry run or successful upload alone does not prove the schedule ran.
 

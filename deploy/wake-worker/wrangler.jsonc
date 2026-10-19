@@ -1,5 +1,6 @@
 {
   "name": "fixmycampus-wakeup",
+  "account_id": "680f14afc5fd2f2feed1261f9a35d0c7",
   "main": "index.mjs",
   "compatibility_date": "2026-10-19",
   "workers_dev": false,

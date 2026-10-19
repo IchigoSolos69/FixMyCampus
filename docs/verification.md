@@ -1,6 +1,6 @@
 # Verification record
 
-Measured locally and against the public deployment on **16 October 2026 (IST)**. This records executed checks and their limits; the requirement matrix in `requirements.md` distinguishes automated evidence from deployment acceptance work.
+Measured locally and against the public deployment on **16 and 19 October 2026 (IST)**. This records executed checks and their limits; the requirement matrix in `requirements.md` distinguishes automated evidence from deployment acceptance work. The later recovery checks appear in the final section.
 
 ## Functional checks
 
@@ -77,3 +77,25 @@ Negative production checks returned HTTP **403** for refresh from an untrusted o
 With explicit approval, exactly **one** password-reset request was submitted for the existing Administrator. Verified TLS database queries found exactly one new reset outbox row, marked sent after **one attempt**, with no stored error: Brevo SMTP accepted the message. Brevo's transactional email logs subsequently showed both **Sent** and **Delivered** events for that same message on 16 October 2026. The recipient's mailbox view or reading of the message was not independently verified. No reset link was opened during these checks, and the password and account token version remained unchanged. User, complaint, and attachment counts remained **1, 0, and 0**; no demo users or complaints were created by these checks.
 
 These checks establish public connectivity and the tested production paths; they do not certify sustained availability or all workflows under production load. The free API host can sleep; background jobs and emergency notifications cannot satisfy continuous-service targets while it is asleep. See [the free hosting guide](../deploy/pages-free.md).
+
+## Recovery and endpoint recheck — 19 October 2026
+
+The Aiven database was powered off and its hostname returned NXDOMAIN. The API could not pass its database health check. Powering on the existing Free service restored the database and hostname without creating a replacement service. After recovery, the Pages and direct Render `/api/v1/health` endpoints returned HTTP **200**, with the database connected, in **594 ms** and **582 ms** respectively. The updated frontend, revision `bf657fb`, is served by Pages with bundle `index-BTH9mVXP.js`; the login form was visibly present during its initial session check and usable afterwards. The five-minute Cloudflare wake Worker was deployed as version `e98001fd-fc8f-47d3-83ea-37f1b47a314d`; actual scheduled execution was still being checked when this record was written.
+
+| Check                      | Observed result                                                                                                                                                      |
+| -------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Current unit suite         | **255/255 passed**                                                                                                                                                   |
+| Workspace checks           | TypeScript typecheck and production build passed                                                                                                                     |
+| Isolated MySQL integration | **11/11 passed in 8.65 seconds**, using MySQL **8.4.10** and a new disposable local test database; migrations 001–004 applied                                        |
+| Production HTTP requests   | **63 requests**: **62 expected results**, one stored bootstrap password declined with HTTP 401, **zero unexpected failures**, and **zero 5xx/unavailable responses** |
+| Authenticated read checks  | **33 GET requests and 11 additional assertions**, all **44 checks passed**                                                                                           |
+| Measured request latency   | Median **594 ms**, range **241–3,421 ms**, across these sequential smoke requests; the slowest was the declined password request                                     |
+| Provider connectivity      | Brevo authenticated STARTTLS verification and ImageKit authenticated folder listing passed; no email was sent and no asset was changed                               |
+
+The initial run contained **32 checks**: 30 HTTP requests and two database diagnostic assertions. Thirty-one checks passed; the old bootstrap credential returned HTTP 401 once and was not retried. The subsequent authenticated run contained **44 checks**: 33 HTTP requests and 11 response-body, configuration, and unchanged-state assertions. These totals explain the difference between **76 checks** and **63 HTTP requests**. An authorized, memory-only access token with a two-minute expiry was used exclusively for the authenticated GET checks. The current human password and browser cookie renewal were not verified in this recheck.
+
+The live checks reached authentication/CSRF validation, catalog, profile, complaint queues and combined filters, private complaint/attachment lookup, notifications, dashboards, and all administration read resources. All four report types and their eight CSV/PDF exports returned HTTP 200; export bodies and no-store headers were checked. Invalid dates, pagination, tokens, JSON, institutional domains, missing authentication, and missing CSRF returned their expected 400/401/403/404/422 errors. Successful production mutations were not exercised. Account creation, verification/reset, role permissions, complaint lifecycle, attachments, notification ownership, SLA jobs, and administrative invariants were exercised by the isolated integration suite.
+
+The address reported for the failed registration was absent from the restored database and had no associated verification outbox row. The database contained two verified accounts, no complaints or attachments, and two previously sent outbox messages with no pending messages or stored delivery errors. The GET checks left those records and the Administrator's password, token version, and login-failure state unchanged. No production account, complaint, attachment, or email was created by this recheck.
+
+Wake requests remain best effort. [Aiven's MySQL Free-tier documentation](https://aiven.io/docs/products/mysql/concepts/mysql-free-tier) permits inactivity power-off and excludes the service from its availability SLA; it does not specify a MySQL inactivity threshold or guarantee that `SELECT 1` prevents power-off. An HTTP wake request cannot power on an already stopped database. Scheduled execution and sustained availability were not yet verified by this recheck.
