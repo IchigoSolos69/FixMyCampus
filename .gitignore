@@ -10,4 +10,5 @@ backups/
 test-results/
 playwright-report/
 .runtime/
+.wrangler/
 *.log
