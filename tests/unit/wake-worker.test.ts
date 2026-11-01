@@ -36,7 +36,7 @@ describe('Cloudflare scheduled service health', () => {
 
     const run = worker.scheduled();
     expect(fetch.mock.calls.map(([url]) => url)).toEqual([
-      'https://fixmycampus-api-7e74.onrender.com/api/v1/health',
+      'https://fixmycampus-api-arvi.onrender.com/api/v1/health',
       'https://fixmycampus.pages.dev/api/v1/health',
       'https://fixmycampus.pages.dev/login',
     ]);

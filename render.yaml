@@ -3,6 +3,7 @@ services:
     name: fixmycampus-api
     runtime: docker
     plan: free
+    region: singapore
     dockerfilePath: ./Dockerfile
     dockerContext: .
     dockerCommand: node dist/apps/api/src/server.js

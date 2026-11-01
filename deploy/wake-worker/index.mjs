@@ -1,7 +1,7 @@
 const targets = [
   {
     service: 'render-api-database',
-    url: 'https://fixmycampus-api-7e74.onrender.com/api/v1/health',
+    url: 'https://fixmycampus-api-arvi.onrender.com/api/v1/health',
     kind: 'api',
   },
   {
