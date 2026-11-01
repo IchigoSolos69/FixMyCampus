@@ -6,6 +6,8 @@ The project implements the accepted scope of **REQ-001–REQ-068** from the supp
 
 **Configured public application:** [fixmycampus.pages.dev](https://fixmycampus.pages.dev). Public registration is restricted to **`pccoepune.org`**; local development uses **`campus.test`**. Deployment checks recorded below are dated results, not a current uptime guarantee.
 
+> **Render migration — 1 November 2026:** The replacement API is deployed in the confirmed destination workspace, and Cloudflare Pages now uses it. Database health recovered after the Aiven service returned to Running. Public health/security checks and CI passed; see the [migration record](docs/verification.md#render-account-migration-started--1-november-2026) for verification limits.
+
 ## Contents
 
 - [Features and permissions](#features-and-permissions)
@@ -386,7 +388,7 @@ Use [benchmark-data.mjs](scripts/benchmark-data.mjs) to generate synthetic data 
 | ------------------- | ------------------------------------------------------------------------------------------------------------- |
 | Static client       | Cloudflare Pages: [fixmycampus.pages.dev](https://fixmycampus.pages.dev)                                      |
 | Browser API         | Same-origin [Pages API health](https://fixmycampus.pages.dev/api/v1/health), forwarded by the Pages Function. |
-| Express API         | Render Docker service: [direct API health](https://fixmycampus-api-7e74.onrender.com/api/v1/health).          |
+| Express API         | Render Docker service: [direct API health](https://fixmycampus-api-arvi.onrender.com/api/v1/health).          |
 | Database            | Aiven MySQL, using verified TLS and a restricted runtime database account.                                    |
 | Evidence            | Private ImageKit storage; authorized server-side reads preserve original file bytes.                          |
 | Transactional email | Brevo SMTP, port 2525 with STARTTLS and a verified sender.                                                    |

@@ -4,7 +4,7 @@ This separate Cloudflare Worker runs every five minutes in Cloudflare, even when
 
 | Target                                                    | What it checks                                     |
 | --------------------------------------------------------- | -------------------------------------------------- |
-| `https://fixmycampus-api-7e74.onrender.com/api/v1/health` | Render is awake and its MySQL `SELECT 1` succeeds. |
+| `https://fixmycampus-api-arvi.onrender.com/api/v1/health` | Render is awake and its MySQL `SELECT 1` succeeds. |
 | `https://fixmycampus.pages.dev/api/v1/health`             | Pages can proxy to the API and connected database. |
 | `https://fixmycampus.pages.dev/login`                     | The static React entry page is available.          |
 
